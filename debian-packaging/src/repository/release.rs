@@ -351,7 +351,12 @@ impl<'a> TryFrom<ReleaseFileEntry<'a>> for ContentsFileEntry<'a> {
         };
 
         // The component is the part up until the `/Contents*` final path component.
-        let component = &entry.path[..entry.path.len() - filename.len() - 1];
+        // If no component is present, this is the empty string.
+        let component = if filename.len() + 1 > entry.path.len() {
+            ""
+        } else {
+            &entry.path[..entry.path.len() - filename.len() - 1]
+        };
 
         Ok(Self {
             entry,

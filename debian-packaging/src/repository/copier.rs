@@ -508,20 +508,24 @@ impl RepositoryCopier {
                 // files that are copied. We can do that when we feel like writing the code...
                 true
             })
-            .map(move |entry| {
-                let path = if by_hash {
-                    entry.by_hash_path()
-                } else {
-                    entry.path.to_string()
-                };
-
-                let path = format!("{}/{}", release.root_relative_path(), path);
-
-                GenericCopy {
+            .flat_map(move |entry| {
+                // Since some repositores may have a hash for some entries but not others, we add both to copy
+                let mut ret = Vec::new();
+                if by_hash {
+                    let path = format!("{}/{}", release.root_relative_path(), entry.by_hash_path());
+                    ret.push(GenericCopy {
+                        source_path: path.clone(),
+                        dest_path: path,
+                        expected_content: Some((entry.size, entry.digest.clone())),
+                    })
+                }
+                let path = format!("{}/{}", release.root_relative_path(), entry.path.to_string());
+                ret.push(GenericCopy {
                     source_path: path.clone(),
                     dest_path: path,
                     expected_content: Some((entry.size, entry.digest.clone())),
-                }
+                });
+                ret.into_iter()
             })
             .collect::<Vec<_>>();
 
