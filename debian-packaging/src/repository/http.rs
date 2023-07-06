@@ -31,15 +31,27 @@ async fn fetch_url(
 ) -> Result<Pin<Box<dyn AsyncRead + Send>>> {
     let request_url = root_url.join(path)?;
 
-    let res = client.get(request_url.clone()).send().await.map_err(|e| {
-        DebianError::RepositoryIoPath(
-            path.to_string(),
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("error sending HTTP request: {:?}", e),
-            ),
-        )
-    })?;
+    let mut attempts = 0;
+    let retries = 5;
+
+    // Try the request a few times, in case of transient errors.
+    let res = loop {
+        match client.get(request_url.clone()).send().await {
+            Ok(response) => break response,
+            Err(e) => {
+                attempts += 1;
+                if attempts >= retries {
+                    return Err(DebianError::RepositoryIoPath(
+                        path.to_string(),
+                        std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            format!("error sending HTTP request: {:?}", e),
+                        ),
+                    ));
+                }
+            }
+        }
+    };
 
     let res = res.error_for_status().map_err(|e| {
         if e.status() == Some(StatusCode::NOT_FOUND) {

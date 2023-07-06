@@ -1,0 +1,11 @@
+source_url: http://archive.ubuntu.com/ubuntu/
+destination_url: file:///home/mjmjelde/linux-packaging-rs/testing/repo/
+distributions: 
+  - jammy
+only_components:
+  - main
+binary_packages_only_architectures:
+  - amd64
+installer_binary_packages_only_architectures:
+  - amd64
+sources_copy: false
